@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>极速闪避</title>
+
+<style>
+body{
+margin:0;
+overflow:hidden;
+background:#222;
+font-family:Arial;
+}
+
+#road{
+position:relative;
+width:100vw;
+height:100vh;
+background:#444;
+overflow:hidden;
+}
+
+#car{
+position:absolute;
+width:50px;
+height:90px;
+background:red;
+bottom:30px;
+left:50%;
+transform:translateX(-50%);
+border-radius:10px;
+}
+
+.enemy{
+position:absolute;
+width:50px;
+height:90px;
+background:yellow;
+top:-100px;
+border-radius:10px;
+}
+
+#line{
+position:absolute;
+width:10px;
+height:100vh;
+background:repeating-linear-gradient(
+white 0px,
+white 30px,
+transparent 30px,
+transparent 60px
+);
+left:50%;
+transform:translateX(-50%);
+opacity:.4;
+}
+
+#score{
+position:absolute;
+top:10px;
+left:10px;
+color:white;
+font-size:28px;
+z-index:100;
+}
+
+#gameover{
+display:none;
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+background:white;
+padding:20px;
+text-align:center;
+z-index:999;
+}
+button{
+font-size:20px;
+padding:10px 20px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="road">
+
+<div id="line"></div>
+
+<div id="score">0</div>
+
+<div id="car"></div>
+
+<div id="gameover">
+<h2>游戏结束</h2>
+<p id="final"></p>
+<button onclick="location.reload()">重新开始</button>
+</div>
+
+</div>
+
+<script>
+
+const road=document.getElementById("road");
+const car=document.getElementById("car");
+const scoreBox=document.getElementById("score");
+
+let carX=window.innerWidth/2-25;
+let score=0;
+let game=true;
+
+function moveLeft(){
+carX-=40;
+if(carX<0)carX=0;
+car.style.left=carX+"px";
+}
+
+function moveRight(){
+carX+=40;
+if(carX>window.innerWidth-50)
+carX=window.innerWidth-50;
+car.style.left=carX+"px";
+}
+
+document.addEventListener("keydown",e=>{
+if(e.key==="ArrowLeft")moveLeft();
+if(e.key==="ArrowRight")moveRight();
+});
+
+road.addEventListener("touchstart",e=>{
+if(e.touches[0].clientX<
+window.innerWidth/2){
+moveLeft();
+}else{
+moveRight();
+}
+});
+
+function enemy(){
+
+if(!game)return;
+
+let div=document.createElement("div");
+div.className="enemy";
+
+div.style.left=
+Math.random()*(window.innerWidth-60)+"px";
+
+road.appendChild(div);
+
+let y=-100;
+
+let timer=setInterval(()=>{
+
+if(!game){
+clearInterval(timer);
+return;
+}
+
+y+=8;
+div.style.top=y+"px";
+
+score++;
+scoreBox.innerText=score;
+
+let c=car.getBoundingClientRect();
+let e=div.getBoundingClientRect();
+
+if(
+c.left<e.right &&
+c.right>e.left &&
+c.top<e.bottom &&
+c.bottom>e.top
+){
+
+game=false;
+
+document.getElementById("final")
+.innerText="得分："+score;
+
+document.getElementById("gameover")
+.style.display="block";
+
+}
+
+if(y>window.innerHeight){
+div.remove();
+clearInterval(timer);
+}
+
+},20);
+
+}
+
+setInterval(enemy,800);
+
+</script>
+
+</body>
+</html>
