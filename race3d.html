@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>3D Racing</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+  </style>
+  <!-- 正确的Three.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+</head>
+<body>
+  <script>
+    // ===== 基础场景 =====
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb); // 天空蓝
+
+    // 相机
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+
+    // 渲染器
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true; // 开启阴影
+    document.body.appendChild(renderer.domElement);
+
+    // ===== 光照 =====
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6)); // 环境光
+    const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+    sun.position.set(10, 20, 10);
+    sun.castShadow = true;
+    scene.add(sun);
+
+    // ===== 地面 =====
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(500, 500),
+      new THREE.MeshStandardMaterial({ color: 0x3c8d2f })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // ===== 道路 =====
+    const road = new THREE.Mesh(
+      new THREE.PlaneGeometry(12, 500),
+      new THREE.MeshStandardMaterial({ color: 0x333333 })
+    );
+    road.rotation.x = -Math.PI / 2;
+    scene.add(road);
+
+    // ===== 车辆 =====
+    const car = new THREE.Group();
+    car.position.y = 0.5;
+    car.castShadow = true;
+
+    // 车身
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(2, 0.8, 4),
+      new THREE.MeshStandardMaterial({ color: 0xff0000 })
+    );
+    body.position.y = 0.5;
+    car.add(body);
+
+    // 车顶
+    const top = new THREE.Mesh(
+      new THREE.BoxGeometry(1.5, 0.7, 2),
+      new THREE.MeshStandardMaterial({ color: 0xaa0000 })
+    );
+    top.position.set(0, 1.2, -0.5);
+    car.add(top);
+
+    // 轮子（补全原代码未完成的部分）
+    for (let x of [-1, 1]) {
+      for (let z of [-1.6, 1.6]) {
+        const wheel = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.3, 0.3, 0.4, 16),
+          new THREE.MeshStandardMaterial({ color: 0x222222 })
+        );
+        wheel.rotation.z = Math.PI / 2;
+        wheel.position.set(x * 0.9, 0.3, z);
+        wheel.castShadow = true;
+        car.add(wheel);
+      }
+    }
+
+    scene.add(car);
+
+    // ===== 控制逻辑 =====
+    const keys = {}; // 定义按键状态对象
+    let speed = 0;
+    let angle = 0;
+    const maxSpeed = 0.6;
+    const minSpeed = -0.2;
+    const accel = 0.006;
+    const decel = 0.98;
+    const turnSpeed = 0.03;
+
+    // 键盘监听
+    document.addEventListener('keydown', e => keys[e.key] = true);
+    document.addEventListener('keyup', e => keys[e.key] = false);
+
+    // ===== 动画循环 =====
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // 加速/减速
+      if (keys['ArrowUp'] || keys['w']) speed = Math.min(speed + accel, maxSpeed);
+      if (keys['ArrowDown'] || keys['s']) speed = Math.max(speed - accel / 2, minSpeed);
+      speed *= decel; // 自动减速
+
+      // 转向
+      if (keys['ArrowLeft'] || keys['a']) angle += turnSpeed * (speed > 0 ? 1 : 0.5);
+      if (keys['ArrowRight'] || keys['d']) angle -= turnSpeed * (speed > 0 ? 1 : 0.5);
+
+      // 更新车辆位置和旋转
+      car.rotation.y = angle;
+      car.position.x += Math.sin(angle) * speed;
+      car.position.z += Math.cos(angle) * speed;
+
+      // 相机跟随
+      const cameraOffset = new THREE.Vector3(
+        Math.sin(angle) * -8,
+        5,
+        Math.cos(angle) * -8
+      );
+      camera.position.copy(car.position).add(cameraOffset);
+      camera.lookAt(car.position);
+
+      renderer.render(scene, camera);
+    }
+
+    // 窗口自适应
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
